@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
+	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/redis.v5"
 )
 
@@ -31,23 +32,30 @@ func (img ImageBucket) Consumer() {
 	defer pubsub.Close()
 
 	if err != nil {
-		fmt.Println(err.Error())
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+			"time":  time.Now(),
+		}).Fatal("Error on subscribe channel - it will break worker run")
 	}
 
 	for {
 		msg, err := pubsub.ReceiveMessage()
 		if err != nil {
-			fmt.Println(err.Error())
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+				"time":  time.Now(),
+			}).Error("Error on subscribe channel")
 			// TODO think about store this image bucket into a queue if does not success send to s3
 		}
-
 		if marshalError := json.Unmarshal([]byte(msg.Payload), &img); marshalError != nil {
 			// TODO same concept over - if fails what should we do with buffer? Image must be created on bucket anyway
-			fmt.Println(marshalError.Error())
+			log.WithFields(log.Fields{
+				"error": marshalError.Error(),
+				"time":  time.Now(),
+			}).Error("Error on subscribe channel")
+		} else {
+			go img.SendBucket()
 		}
-
-		go img.SendBucket()
-		fmt.Println(img)
 	}
 
 }
