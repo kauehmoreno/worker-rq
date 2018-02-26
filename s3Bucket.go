@@ -55,9 +55,11 @@ func (img ImageBucket) SendBucket() {
 				}).Error("Error on makebucket on s3 digitalocean")
 			}
 		}
+
 		log.WithFields(log.Fields{
 			"time": time.Now(),
 		}).Info("Successfully created %s\n", "ja-cortei-user")
+
 		rules := make(map[string]string)
 		rules["x-amz-acl"] = "public-read"
 
@@ -77,6 +79,7 @@ func (img ImageBucket) SendBucket() {
 				"error":    s3Error.Error(),
 				"fileName": img.FileName,
 			}).Error("Error on PutObject on s3 digitaocean bucket")
+			img.errorOnSendImg()
 		} else {
 			log.WithFields(log.Fields{
 				"time":     time.Now(),
