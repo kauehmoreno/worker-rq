@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -57,5 +59,12 @@ func (img ImageBucket) Consumer() {
 			go img.SendBucket()
 		}
 	}
+}
 
+func (img ImageBucket) errorOnSendImg() {
+	redis := GetInstance()
+	names := strings.Split(img.FileName, "/")
+	name := names[len(names)-1]
+	key := fmt.Sprintf("ImageError:%s", name)
+	redis.RPush(key, img)
 }
