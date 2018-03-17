@@ -1,6 +1,8 @@
 package main
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+)
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -9,5 +11,7 @@ func init() {
 
 func main() {
 	var img ImageBucket
-	img.Consumer()
+	var message SMS
+	go img.Consumer()
+	message.Consumer()
 }
