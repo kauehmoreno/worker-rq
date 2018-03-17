@@ -28,6 +28,7 @@ func (img ImageBucket) SendBucket() {
 			"error": err.Error(),
 			"time":  time.Now(),
 		}).Error("Error on setup s3 digitalocean client")
+		return
 	} else {
 
 		decoded, decodeErr := base64.StdEncoding.DecodeString(img.Image)
