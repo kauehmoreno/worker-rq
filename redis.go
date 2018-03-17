@@ -61,10 +61,62 @@ func (img ImageBucket) Consumer() {
 	}
 }
 
+// Consumer to send SMS to verification account
+func (sms SMS) Consumer() {
+	redis := GetInstance()
+	pubsub, err := redis.Subscribe("sms")
+	fmt.Println("Vai comecar a execucao")
+
+	defer pubsub.Close()
+
+	if err != nil {
+		fmt.Println("Deu erro", err.Error())
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+			"time":  time.Now(),
+		}).Fatal("Error on subscribe to channel")
+		return
+	}
+
+	fmt.Println("Vai comecar o for")
+	for {
+		msg, erro := pubsub.ReceiveMessage()
+		if erro != nil {
+			log.WithFields(log.Fields{
+				"error": erro.Error(),
+				"time":  time.Now(),
+			}).Error("Error on reading message from channel")
+		}
+
+		if erroToUnmarshal := json.Unmarshal([]byte(msg.Payload), &sms); erroToUnmarshal != nil {
+			log.WithFields(log.Fields{
+				"error": erroToUnmarshal.Error(),
+				"time":  time.Now(),
+				"msg":   msg.Payload,
+			}).Error("Error on unmmarshal message")
+		} else {
+			go sms.SendSMS()
+		}
+	}
+}
+
 func (img ImageBucket) errorOnSendImg() {
 	redis := GetInstance()
 	names := strings.Split(img.FileName, "/")
 	name := names[len(names)-1]
 	key := fmt.Sprintf("ImageError:%s", name)
 	redis.RPush(key, img)
+}
+
+// Set on Redis information about confirmation token
+// which key is his email
+func (sms *SMS) Set(expire time.Duration) {
+	redis := GetInstance()
+	erro := redis.Set(sms.Email, sms.ConfirmToken, expire).Err()
+	if erro != nil {
+		log.WithFields(log.Fields{
+			"erro": erro.Error(),
+			"time": time.Now(),
+		}).Error("Error on set key into redis")
+	}
 }
