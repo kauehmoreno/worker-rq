@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/cespare/xxhash"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/redis.v5"
 )
@@ -112,11 +114,16 @@ func (img ImageBucket) errorOnSendImg() {
 // which key is his email
 func (sms *SMS) Set(expire time.Duration) {
 	redis := GetInstance()
-	erro := redis.Set(sms.Email, sms.ConfirmToken, expire).Err()
+	key := HashKey(sms.Email)
+	erro := redis.Set(key, sms.ConfirmToken, expire).Err()
 	if erro != nil {
 		log.WithFields(log.Fields{
 			"erro": erro.Error(),
 			"time": time.Now(),
 		}).Error("Error on set key into redis")
 	}
+}
+
+func HashKey(key string) string {
+	return strconv.FormatUint(xxhash.Sum64String(key), 10)
 }
